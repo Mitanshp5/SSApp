@@ -1,0 +1,23 @@
+<Window x:Class="SSApp.UI.MachineStatusWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Machine Status"
+        Height="400" Width="650"
+        WindowStartupLocation="CenterOwner"
+        Background="#111827">
+    <Grid>
+        <Border Background="#020617"
+                CornerRadius="10"
+                Padding="20"
+                Margin="16">
+            <TextBlock Text="Machine status view placeholder.
+You will later show camera, lights, gantry, PLC, etc."
+                       Foreground="#9CA3AF"
+                       TextWrapping="Wrap"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"
+                       FontSize="14"/>
+        </Border>
+    </Grid>
+</Window>

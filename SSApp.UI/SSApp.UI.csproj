@@ -8,4 +8,9 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SSApp.Data\SSApp.Data.csproj" />
+    <ProjectReference Include="..\SSApp.Services\SSApp.Services.csproj" />
+  </ItemGroup>
+
 </Project>

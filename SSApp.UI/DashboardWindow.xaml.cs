@@ -1,14 +1,20 @@
 ﻿using System.Windows;
 using System.Windows.Media;
 using SSApp.Services;
-using SSApp.Data;
 using System.Windows.Input;
+using SSApp.Data.Models;
+using System.Runtime.InteropServices;
 
 
 namespace SSApp.UI
 {
     public partial class DashboardWindow : Window
     {
+        [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void StartScanNative(string ipAddress, int port);
+
+        private bool _isPlcConnected = false;
+
         public DashboardWindow()
         {
             InitializeComponent();
@@ -38,8 +44,14 @@ namespace SSApp.UI
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 
-            // Start Scan: Admin + Operator
+            // Start Scan Button (sidebar): Admin + Operator
             StartScanButton.Visibility =
+                (role == UserRole.Admin || role == UserRole.Operator)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            
+            // Start Scan Tile (main area): Admin + Operator
+            StartScanTile.Visibility =
                 (role == UserRole.Admin || role == UserRole.Operator)
                     ? Visibility.Visible
                     : Visibility.Collapsed;
@@ -49,6 +61,7 @@ namespace SSApp.UI
 
         private void SetPlcStatus(bool isConnected)
         {
+            _isPlcConnected = isConnected;
             PlcStatusText.Text = isConnected ? "Connected" : "Disconnected";
             PlcStatusIndicator.Fill = isConnected
                 ? new SolidColorBrush(Color.FromRgb(34, 197, 94))   // green
@@ -66,9 +79,27 @@ namespace SSApp.UI
 
         private void StartScanButton_Click(object sender, RoutedEventArgs e)
         {
-            // For now just a placeholder – you’ll call C++/PLC later.
-            MessageBox.Show("Start Scan – not implemented yet.",
-                "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+            if (!_isPlcConnected)
+            {
+                MessageBox.Show("PLC is not connected",
+                    "Connection Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Get Config
+            var plcService = new PlcConfigService();
+            var config = plcService.GetPlcConfig();
+
+            // Call Native DLL to start scan (fire and forget thread)
+            try
+            {
+                StartScanNative(config.IpAddress, config.Port);
+                MessageBox.Show("Scan started successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                 MessageBox.Show($"Error calling native module: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void PastScansButton_Click(object sender, RoutedEventArgs e)
@@ -125,6 +156,15 @@ namespace SSApp.UI
                 : WindowState.Maximized;
         }
 
+        private void StartScanCard_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            StartScanButton_Click(sender, e);
+        }
+
+        private void MachineStatusCard_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            MachineStatusButton_Click(sender, e);
+        }
         private void Close_Click(object sender, RoutedEventArgs e)
         {
             Close();
@@ -134,6 +174,30 @@ namespace SSApp.UI
             var login = new LoginWindow();
             login.Show();
             Close();
+        }
+
+        private void PlcConnectionCard_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            // Open PLC Settings window
+            var plcSettingsWindow = new PlcSettingsWindow()
+            {
+                Owner = this
+            };
+
+            // Set ReadOnly if not Admin
+            if (AuthService.CurrentRole != UserRole.Admin)
+            {
+                plcSettingsWindow.SetReadOnly(true);
+            }
+
+            if (plcSettingsWindow.ShowDialog() == true)
+            {
+                // Settings are saved in the window via service
+                MessageBox.Show($"PLC settings saved:\nIP: {plcSettingsWindow.PlcIpAddress}\nPort: {plcSettingsWindow.PlcPort}",
+                    "Settings Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // TODO: Reconnect to PLC with new settings
+            }
         }
     }
 }

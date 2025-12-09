@@ -1,4 +1,4 @@
-﻿using SSApp.Data;
+﻿using SSApp.Data.Models;
 using SSApp.Services;
 using System.Collections.ObjectModel;
 using System.Linq;

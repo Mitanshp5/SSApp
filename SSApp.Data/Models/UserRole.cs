@@ -1,4 +1,4 @@
-﻿namespace SSApp.Data
+﻿namespace SSApp.Data.Models
 {
     public enum UserRole
     {

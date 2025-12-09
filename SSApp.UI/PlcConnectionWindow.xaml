@@ -1,0 +1,200 @@
+﻿<Window x:Class="SSApp.UI.PlcSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="PLC Settings"
+        Height="380"
+        Width="500"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        Background="#020617">
+    <Window.Resources>
+        <!-- Button Style -->
+        <Style x:Key="ActionButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="#2563EB"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#3B82F6"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#1E40AF"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CancelButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
+            <Setter Property="Background" Value="#334155"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#475569"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#1E293B"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Title bar buttons -->
+        <Style x:Key="TitleBarButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#1E293B"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#334155"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- TextBox Style -->
+        <Style x:Key="ModernTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="#0F172A"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Margin="2"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="BorderBrush" Value="#475569"/>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="#2563EB"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title Bar -->
+        <Border Grid.Row="0"
+                Background="#0F172A"
+                BorderBrush="#1E40AF"
+                BorderThickness="0,0,0,1">
+            <Grid MouseDown="TitleBar_MouseDown">
+                <TextBlock Text="PLC Settings"
+                           Foreground="#E2E8F0"
+                           VerticalAlignment="Center"
+                           Margin="16,0,0,0"
+                           FontSize="13"
+                           FontWeight="SemiBold"/>
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+                    <Button Style="{StaticResource TitleBarButtonStyle}"
+                            Content="✕"
+                            Click="Close_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Content -->
+        <Border Grid.Row="1"
+                Background="#020617"
+                Padding="30">
+            <StackPanel>
+                <TextBlock Text="Configure PLC Connection"
+                           Foreground="White"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,20"/>
+
+                <!-- IP Address -->
+                <TextBlock Text="PLC IP Address"
+                           Foreground="#94A3B8"
+                           FontSize="13"
+                           Margin="0,0,0,6"/>
+                <TextBox x:Name="IpAddressTextBox"
+                         Style="{StaticResource ModernTextBox}"
+                         Text="192.168.1.100"
+                         Margin="0,0,0,20"/>
+
+                <!-- Port -->
+                <TextBlock Text="Port"
+                           Foreground="#94A3B8"
+                           FontSize="13"
+                           Margin="0,0,0,6"/>
+                <TextBox x:Name="PortTextBox"
+                         Style="{StaticResource ModernTextBox}"
+                         Text="502"
+                         Margin="0,0,0,30"/>
+
+                <!-- Buttons -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button Grid.Column="0"
+                            x:Name="SaveButton"
+                            Style="{StaticResource ActionButtonStyle}"
+                            Content="Save"
+                            Click="SaveButton_Click"/>
+
+                    <Button Grid.Column="2"
+                            Style="{StaticResource CancelButtonStyle}"
+                            Content="Cancel"
+                            Click="Close_Click"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

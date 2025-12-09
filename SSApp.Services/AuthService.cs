@@ -1,4 +1,5 @@
 ﻿using SSApp.Data;
+using SSApp.Data.Models;
 
 namespace SSApp.Services
 {

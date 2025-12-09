@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.Sqlite;
+using SSApp.Data.Models;
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
@@ -47,6 +48,16 @@ namespace SSApp.Data
                 cmd.Parameters.AddWithValue("$r", (int)UserRole.Admin);
                 cmd.ExecuteNonQuery();
             }
+
+            // Create PlcConfig table
+            cmd.CommandText = @"
+                CREATE TABLE IF NOT EXISTS PlcConfig (
+                    Id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                    IpAddress    TEXT    NOT NULL,
+                    Port         INTEGER NOT NULL,
+                    LastModified TEXT    NOT NULL
+                );";
+            cmd.ExecuteNonQuery();
         }
 
         // ---------- PASSWORD HASHING ----------
@@ -152,6 +163,74 @@ namespace SSApp.Data
                 Salt = reader.GetString(3),
                 Role = (UserRole)reader.GetInt32(4)
             };
+        }
+
+        // ---------- PLC CONFIG ----------
+
+        public static PlcConfig GetPlcConfig()
+        {
+            using var conn = new SqliteConnection(_connectionString);
+            conn.Open();
+
+            var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT Id, IpAddress, Port, LastModified FROM PlcConfig ORDER BY Id DESC LIMIT 1;";
+            
+            using var reader = cmd.ExecuteReader();
+            if (reader.Read())
+            {
+                return new PlcConfig
+                {
+                    Id = reader.GetInt32(0),
+                    IpAddress = reader.GetString(1),
+                    Port = reader.GetInt32(2),
+                    LastModified = reader.GetString(3)
+                };
+            }
+
+            // Default values
+            return new PlcConfig
+            {
+                Id = 0,
+                IpAddress = "169.254.180.21",
+                Port = 5000,
+                LastModified = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+            };
+        }
+
+        public static void SavePlcConfig(string ip, int port)
+        {
+            using var conn = new SqliteConnection(_connectionString);
+            conn.Open();
+
+            var cmd = conn.CreateCommand();
+            // We'll just insert a new record for history or update the single one. 
+            // For simplicity based on previous service code, I'll update if exists or insert.
+            // Actually, let's just insert to keep history or update the latest.
+            // Given the requirement "store ip and port in database", a single current config is usually enough.
+            // But let's check if one exists.
+            
+            cmd.CommandText = "SELECT COUNT(*) FROM PlcConfig;";
+            long count = (long)cmd.ExecuteScalar();
+
+            if (count > 0)
+            {
+                 cmd.CommandText = @"
+                    UPDATE PlcConfig
+                    SET IpAddress = $ip, Port = $port, LastModified = $lm
+                    WHERE Id = (SELECT MAX(Id) FROM PlcConfig);";
+            }
+            else
+            {
+                cmd.CommandText = @"
+                    INSERT INTO PlcConfig (IpAddress, Port, LastModified)
+                    VALUES ($ip, $port, $lm);";
+            }
+
+            cmd.Parameters.AddWithValue("$ip", ip);
+            cmd.Parameters.AddWithValue("$port", port);
+            cmd.Parameters.AddWithValue("$lm", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            
+            cmd.ExecuteNonQuery();
         }
 
         // ---------- CRUD ----------

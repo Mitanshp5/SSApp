@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Dashboard"
         Height="550"
-        Width="900"
+        Width="915"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         ResizeMode="CanResize"
@@ -13,12 +13,12 @@
         <SolidColorBrush x:Key="AccentBrush" Color="#2563EB"/>
         <SolidColorBrush x:Key="AccentBrushLight" Color="#3B82F6"/>
 
-        <!-- Sidebar button style -->
+        <!-- Sidebar button style with hover glow -->
         <Style x:Key="NavButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Margin" Value="0,4,0,4"/>
-            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Padding" Value="12,10"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="FontSize" Value="14"/>
@@ -27,19 +27,56 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}"
-                                CornerRadius="6">
-                            <ContentPresenter Margin="6,2"
+                                CornerRadius="8"
+                                BorderBrush="#1E40AF"
+                                BorderThickness="0">
+                            <Border.Effect>
+                                <DropShadowEffect x:Name="ButtonGlow"
+                                                  Color="#2563EB"
+                                                  BlurRadius="0"
+                                                  ShadowDepth="0"
+                                                  Opacity="0"/>
+                            </Border.Effect>
+                            <ContentPresenter Margin="8,2"
                                               VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#1F2937"/>
+                                <Setter Property="Background" Value="#1E293B"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonGlow"
+                                                           Storyboard.TargetProperty="BlurRadius"
+                                                           To="12"
+                                                           Duration="0:0:0.2"/>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonGlow"
+                                                           Storyboard.TargetProperty="Opacity"
+                                                           To="0.4"
+                                                           Duration="0:0:0.2"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonGlow"
+                                                           Storyboard.TargetProperty="BlurRadius"
+                                                           To="0"
+                                                           Duration="0:0:0.2"/>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonGlow"
+                                                           Storyboard.TargetProperty="Opacity"
+                                                           To="0"
+                                                           Duration="0:0:0.2"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#111827"/>
+                                <Setter Property="Background" Value="#334155"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.5"/>
+                                <Setter Property="Opacity" Value="0.4"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -47,12 +84,12 @@
             </Setter>
         </Style>
 
-        <!-- Title bar buttons -->
+        <!-- Title bar buttons with smooth hover -->
         <Style x:Key="TitleBarButtonStyle" TargetType="Button">
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="#94A3B8"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Width" Value="40"/>
+            <Setter Property="Width" Value="46"/>
             <Setter Property="Height" Value="32"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontSize" Value="14"/>
@@ -65,10 +102,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#111827"/>
+                                <Setter Property="Background" Value="#1E293B"/>
+                                <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#1F2937"/>
+                                <Setter Property="Background" Value="#334155"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -80,34 +118,32 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="32"/>
-            <!-- custom title bar -->
             <RowDefinition Height="*"/>
-            <!-- whole app body -->
         </Grid.RowDefinitions>
 
-        <!-- ===== TITLE BAR (full width, top row) ===== -->
+        <!-- ===== TITLE BAR ===== -->
         <Border Grid.Row="0"
-                Background="#020617"
-                BorderBrush="#2563EB"
+                Background="#0F172A"
+                BorderBrush="#1E40AF"
                 BorderThickness="0,0,0,1">
+            <Border.Effect>
+                <DropShadowEffect Color="#2563EB" BlurRadius="8" ShadowDepth="0" Opacity="0.2"/>
+            </Border.Effect>
             <Grid MouseDown="TitleBar_MouseDown">
                 <TextBlock Text="SSApp – Dashboard"
-                           Foreground="White"
+                           Foreground="#E2E8F0"
                            VerticalAlignment="Center"
-                           Margin="12,0,0,0"
+                           Margin="16,0,0,0"
                            FontSize="13"
                            FontWeight="SemiBold"/>
                 <StackPanel Orientation="Horizontal"
                             HorizontalAlignment="Right">
-                    <!-- Minimize -->
                     <Button Style="{StaticResource TitleBarButtonStyle}"
-                            Content="—"
+                            Content="─"
                             Click="Minimize_Click"/>
-                    <!-- Maximize / Restore -->
                     <Button Style="{StaticResource TitleBarButtonStyle}"
-                            Content="☐"
+                            Content="□"
                             Click="Maximize_Click"/>
-                    <!-- Close -->
                     <Button Style="{StaticResource TitleBarButtonStyle}"
                             Content="✕"
                             Click="Close_Click"/>
@@ -115,23 +151,27 @@
             </Grid>
         </Border>
 
-        <!-- ===== BODY (sidebar + main) ===== -->
+        <!-- ===== BODY ===== -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="230"/>
-                <!-- sidebar -->
                 <ColumnDefinition Width="*"/>
-                <!-- main -->
             </Grid.ColumnDefinitions>
 
-            <!-- Sidebar -->
+            <!-- Sidebar with gradient overlay -->
             <Border Grid.Column="0"
-                    Background="#020617">
+                    Background="#0F172A">
+                <Border.Effect>
+                    <DropShadowEffect Color="Black" BlurRadius="20" ShadowDepth="0" Opacity="0.3"/>
+                </Border.Effect>
                 <DockPanel Margin="16">
                     <!-- Bottom: logout -->
                     <StackPanel DockPanel.Dock="Bottom"
                                 Margin="0,16,0,0">
-                        <Separator Margin="0,8,0,8" Opacity="0.3"/>
+                        <Separator Margin="0,8,0,8" 
+                                   Background="#1E293B" 
+                                   Opacity="0.6"
+                                   Height="1"/>
                         <Button x:Name="LogoutButton"
                                 Style="{StaticResource NavButtonStyle}"
                                 Content="Logout"
@@ -142,48 +182,53 @@
                     <StackPanel>
                         <TextBlock Text="SSApp"
                                    Foreground="White"
-                                   FontSize="22"
+                                   FontSize="24"
                                    FontWeight="Bold"
-                                   Margin="0,0,0,4"/>
+                                   Margin="0,0,0,6">
+                            <TextBlock.Effect>
+                                <DropShadowEffect Color="#2563EB" BlurRadius="16" ShadowDepth="0" Opacity="0.6"/>
+                            </TextBlock.Effect>
+                        </TextBlock>
 
                         <TextBlock x:Name="UserInfoText"
-                                   Foreground="#9CA3AF"
+                                   Foreground="#94A3B8"
                                    FontSize="12"
                                    Margin="0,0,0,2"/>
 
                         <TextBlock x:Name="RoleInfoText"
-                                   Foreground="#6B7280"
-                                   FontSize="12"
-                                   Margin="0,0,0,16"/>
+                                   Foreground="#64748B"
+                                   FontSize="11"
+                                   Margin="0,0,0,20"/>
 
-                        <TextBlock Text="Navigation"
-                                   Foreground="#6B7280"
-                                   FontSize="12"
-                                   Margin="0,8,0,4"/>
+                        <TextBlock Text="NAVIGATION"
+                                   Foreground="#64748B"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Margin="0,8,0,8"/>
 
                         <Button x:Name="MachineStatusButton"
                                 Style="{StaticResource NavButtonStyle}"
-                                Content="Machine Status"
+                                Content="⚙️ Machine Status"
                                 Click="MachineStatusButton_Click"/>
 
                         <Button x:Name="StartScanButton"
                                 Style="{StaticResource NavButtonStyle}"
-                                Content="Start Scan"
+                                Content="▶️ Start Scan"
                                 Click="StartScanButton_Click"/>
 
                         <Button x:Name="PastScansButton"
                                 Style="{StaticResource NavButtonStyle}"
-                                Content="Past Scans"
+                                Content="📋 Past Scans"
                                 Click="PastScansButton_Click"/>
 
                         <Button x:Name="SettingsButton"
                                 Style="{StaticResource NavButtonStyle}"
-                                Content="Settings"
+                                Content="⚙️ Settings"
                                 Click="SettingsButton_Click"/>
 
                         <Button x:Name="ManageUsersButton"
                                 Style="{StaticResource NavButtonStyle}"
-                                Content="Manage Users"
+                                Content="👥 Manage Users"
                                 Click="ManageUsersButton_Click"
                                 Margin="0,16,0,0"/>
                     </StackPanel>
@@ -191,74 +236,156 @@
             </Border>
 
             <!-- Main panel -->
-            <Grid Grid.Column="1" Margin="16">
+            <Grid Grid.Column="1" Margin="20">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Top status cards -->
+                <!-- Top status cards with glassmorphism -->
                 <StackPanel Grid.Row="0"
                             Orientation="Horizontal"
-                            Margin="0,0,0,12">
+                            Margin="0,0,0,16">
                     <!-- PLC status card -->
-                    <Border Background="#020617"
-                            CornerRadius="10"
-                            Padding="16"
-                            Margin="0,0,12,0"
-                            Width="220">
+                    <Border Background="#0F172A"
+                            CornerRadius="12"
+                            Padding="20"
+                            Margin="0,0,16,0"
+                            Width="200"
+                            BorderBrush="#1E40AF"
+                            BorderThickness="1"
+                            Cursor="Hand"
+                            MouseDown="PlcConnectionCard_MouseDown">
+                        <Border.Effect>
+                            <DropShadowEffect Color="#2563EB" BlurRadius="20" ShadowDepth="0" Opacity="0.15"/>
+                        </Border.Effect>
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#1E293B"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <StackPanel>
-                            <TextBlock Text="PLC Connection"
-                                       Foreground="#9CA3AF"
-                                       FontSize="12"/>
+                            <TextBlock Text="PLC CONNECTION"
+                                       Foreground="#64748B"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"/>
                             <StackPanel Orientation="Horizontal"
-                                        Margin="0,6,0,0"
+                                        Margin="0,10,0,0"
                                         VerticalAlignment="Center">
                                 <Ellipse x:Name="PlcStatusIndicator"
-                                         Width="10" Height="10"
-                                         Fill="Red"
-                                         Margin="0,2,8,0"/>
+                                         Width="12" Height="12"
+                                         Fill="#EF4444"
+                                         Margin="0,2,10,0">
+                                    <Ellipse.Effect>
+                                        <DropShadowEffect Color="#EF4444" BlurRadius="8" ShadowDepth="0" Opacity="0.8"/>
+                                    </Ellipse.Effect>
+                                </Ellipse>
                                 <TextBlock x:Name="PlcStatusText"
                                            Text="Disconnected"
-                                           Foreground="White"
-                                           FontSize="14"
+                                           Foreground="#E2E8F0"
+                                           FontSize="15"
                                            FontWeight="SemiBold"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
 
                     <!-- Machine status summary card -->
-                    <Border Background="#020617"
-                            CornerRadius="10"
-                            Padding="16"
-                            Margin="0,0,12,0"
-                            Width="260">
+                    <Border Background="#0F172A"
+                            CornerRadius="12"
+                            Padding="20"
+                            Margin="0,0,16,0"
+                            Width="200"
+                            BorderBrush="#1E40AF"
+                            BorderThickness="1"
+                            Cursor="Hand"
+                            MouseDown="MachineStatusCard_MouseDown">
+                        <Border.Effect>
+                            <DropShadowEffect Color="#2563EB" BlurRadius="20" ShadowDepth="0" Opacity="0.15"/>
+                        </Border.Effect>
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#1E293B"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <StackPanel>
-                            <TextBlock Text="Machine Status"
-                                       Foreground="#9CA3AF"
-                                       FontSize="12"/>
+                            <TextBlock Text="MACHINE STATUS"
+                                       Foreground="#64748B"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"/>
                             <TextBlock x:Name="MachineStatusText"
-                                       Margin="0,6,0,0"
+                                       Margin="0,10,0,0"
                                        Text="Not checked"
+                                       Foreground="#E2E8F0"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Start Scan action card -->
+                    <Border x:Name="StartScanTile"
+                            Background="#1E40AF"
+                            CornerRadius="12"
+                            Padding="20"
+                            Margin="0,0,16,0"
+                            Width="200"
+                            BorderBrush="#3B82F6"
+                            BorderThickness="1"
+                            Cursor="Hand"
+                            MouseDown="StartScanCard_MouseDown">
+                        <Border.Effect>
+                            <DropShadowEffect Color="#2563EB" BlurRadius="20" ShadowDepth="0" Opacity="0.4"/>
+                        </Border.Effect>
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#2563EB"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel>
+                            <TextBlock Text="QUICK ACTION"
+                                       Foreground="#93C5FD"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"/>
+                            <TextBlock Text="▶️ Start Scan"
+                                       Margin="0,10,0,0"
                                        Foreground="White"
-                                       FontSize="14"
+                                       FontSize="15"
                                        FontWeight="SemiBold"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
 
-                <!-- Main placeholder area -->
+                <!-- Main placeholder area with gradient -->
                 <Border Grid.Row="1"
-                        Background="#020617"
-                        CornerRadius="10"
-                        Padding="20">
-                    <TextBlock Text="Dashboard content area.
-Select an option from the left."
-                               Foreground="#6B7280"
-                               FontSize="16"
-                               VerticalAlignment="Center"
-                               HorizontalAlignment="Center"
-                               TextAlignment="Center"/>
+                        Background="#0F172A"
+                        CornerRadius="12"
+                        Padding="24"
+                        BorderBrush="#1E40AF"
+                        BorderThickness="1">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#2563EB" BlurRadius="20" ShadowDepth="0" Opacity="0.15"/>
+                    </Border.Effect>
+                    <Grid>
+                        <Rectangle>
+                            <Rectangle.Fill>
+                                <RadialGradientBrush>
+                                    <GradientStop Color="#1E293B" Offset="0"/>
+                                    <GradientStop Color="#0F172A" Offset="1"/>
+                                </RadialGradientBrush>
+                            </Rectangle.Fill>
+                        </Rectangle>
+                    </Grid>
                 </Border>
             </Grid>
         </Grid>

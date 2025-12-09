@@ -1,7 +1,7 @@
 <Window x:Class="SSApp.UI.ManageUsersWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:data="clr-namespace:SSApp.Data;assembly=SSApp.Data"
+        xmlns:data="clr-namespace:SSApp.Data.Models;assembly=SSApp.Data"
         Title="Manage Users"
         Height="450"
         Width="750"

@@ -5,6 +5,8 @@
 #pragma once
 
 #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
+#define NOMINMAX                        // Prevent min/max macro definition
+
 // Windows Header Files
 #include <windows.h>
 #include <winsock2.h>

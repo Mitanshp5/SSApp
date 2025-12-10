@@ -132,6 +132,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
+    <ClInclude Include="mcProtocol.h" />
     <ClInclude Include="PlcControl.h" />
   </ItemGroup>
   <ItemGroup>

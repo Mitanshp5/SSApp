@@ -1,6 +1,8 @@
 ﻿using System.Windows;
 using System.Windows.Media;
 using SSApp.Services;
+using SSApp.Services.Notifications;
+using SSApp.Services.Logging;
 using System.Windows.Input;
 using SSApp.Data.Models;
 using System.Runtime.InteropServices;
@@ -13,7 +15,19 @@ namespace SSApp.UI
         [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern void StartScanNative(string ipAddress, int port);
 
+        [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool ConnectPlc(string ipAddress, int port);
+
+        [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int GetLastPlcValue();
+
+        [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool GetIsConnected();
+
         private bool _isPlcConnected = false;
+        private System.Windows.Threading.DispatcherTimer _statusTimer;
 
         public DashboardWindow()
         {
@@ -25,9 +39,61 @@ namespace SSApp.UI
 
             // Placeholder status values – you’ll wire PLC + machine later
             SetPlcStatus(isConnected: false);
-            MachineStatusText.Text = "System OK (stub)";
+            
             // Apply role-based visibility
             ApplyRolePermissions();
+
+            // Start polling timer
+            _statusTimer = new System.Windows.Threading.DispatcherTimer();
+            _statusTimer.Interval = TimeSpan.FromMilliseconds(500);
+            _statusTimer.Tick += StatusTimer_Tick;
+            _statusTimer.Start();
+        }
+
+        private void StatusTimer_Tick(object? sender, EventArgs e)
+        {
+            try
+            {
+                // Check connection status
+                bool connected = GetIsConnected();
+                SetPlcStatus(connected);
+
+                if (connected)
+                {
+                    // Update machine status from D0
+                    int status = GetLastPlcValue();
+                    MachineStatusText.Text = GetStatusString(status);
+                    
+                    // Optional: Color coding based on status
+                    if (status == 3) // Error
+                        MachineStatusText.Foreground = new SolidColorBrush(Color.FromRgb(239, 68, 68)); // Red
+                    else if (status == 1) // Running
+                        MachineStatusText.Foreground = new SolidColorBrush(Color.FromRgb(34, 197, 94)); // Green
+                    else
+                        MachineStatusText.Foreground = new SolidColorBrush(Color.FromRgb(226, 232, 240)); // Default White
+                }
+                else
+                {
+                    MachineStatusText.Text = "Offline";
+                    MachineStatusText.Foreground = new SolidColorBrush(Color.FromRgb(148, 163, 184)); // Gray
+                }
+            }
+            catch 
+            {
+                // Ignore errors during polling (e.g. DLL not loaded yet)
+            }
+        }
+
+        private string GetStatusString(int code)
+        {
+            return code switch
+            {
+                0 => "Idle",
+                1 => "Running",
+                2 => "Paused",
+                3 => "Error",
+                _ => $"Code {code}"
+            };
         }
 
         private void ApplyRolePermissions()
@@ -81,8 +147,7 @@ namespace SSApp.UI
         {
             if (!_isPlcConnected)
             {
-                MessageBox.Show("PLC is not connected",
-                    "Connection Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                NotificationService.ShowWarning("PLC is not connected. Please check settings.");
                 return;
             }
 
@@ -94,11 +159,24 @@ namespace SSApp.UI
             try
             {
                 StartScanNative(config.IpAddress, config.Port);
-                MessageBox.Show("Scan started successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // Log to database
+                var scanService = new ScanService();
+                scanService.SaveScan(new ScanRecord
+                {
+                    Timestamp = DateTime.Now,
+                    InitiatedBy = AuthService.CurrentUser ?? "Unknown",
+                    Status = "Initiated",
+                    ResultCode = "PENDING"
+                });
+
+                NotificationService.ShowSuccess("Scan started successfully.");
+                Logger.LogInformation($"Scan started by {AuthService.CurrentUser}");
             }
             catch (Exception ex)
             {
-                 MessageBox.Show($"Error calling native module: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                 NotificationService.ShowError("Failed to start scan (Native Module Error).");
+                 Logger.LogError("Error calling native StartScan", ex);
             }
         }
 
@@ -193,10 +271,31 @@ namespace SSApp.UI
             if (plcSettingsWindow.ShowDialog() == true)
             {
                 // Settings are saved in the window via service
-                MessageBox.Show($"PLC settings saved:\nIP: {plcSettingsWindow.PlcIpAddress}\nPort: {plcSettingsWindow.PlcPort}",
-                    "Settings Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+                NotificationService.ShowInfo($"PLC settings saved: {plcSettingsWindow.PlcIpAddress}:{plcSettingsWindow.PlcPort}");
+                Logger.LogInformation($"PLC settings updated to {plcSettingsWindow.PlcIpAddress}:{plcSettingsWindow.PlcPort}");
 
-                // TODO: Reconnect to PLC with new settings
+                // Reconnect to PLC with new settings
+                try
+                {
+                    bool connected = ConnectPlc(plcSettingsWindow.PlcIpAddress, plcSettingsWindow.PlcPort);
+                    SetPlcStatus(connected);
+                    
+                    if (connected)
+                    {
+                        NotificationService.ShowSuccess("Successfully connected to PLC.");
+                    }
+                    else
+                    {
+                        NotificationService.ShowError("Failed to connect to PLC. Check settings and network.");
+                        Logger.LogWarning("Failed to connect to PLC after settings update.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    NotificationService.ShowError($"Error connecting to native module: {ex.Message}");
+                    Logger.LogError("Native module error during connection", ex);
+                    SetPlcStatus(false);
+                }
             }
         }
     }

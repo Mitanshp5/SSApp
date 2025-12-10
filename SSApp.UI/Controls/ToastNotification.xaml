@@ -1,0 +1,82 @@
+<UserControl x:Class="SSApp.UI.Controls.ToastNotification"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="60" d:DesignWidth="300"
+             Height="Auto" Width="300"
+             Margin="0,5,0,5"
+             Opacity="0">
+    <UserControl.Resources>
+        <Storyboard x:Key="SlideIn">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.3"/>
+            <ThicknessAnimation Storyboard.TargetProperty="Margin" From="0,20,0,0" To="0,5,0,5" Duration="0:0:0.3" DecelerationRatio="0.9"/>
+        </Storyboard>
+        <Storyboard x:Key="FadeOut">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="1" To="0" Duration="0:0:0.3"/>
+        </Storyboard>
+    </UserControl.Resources>
+    
+    <Border x:Name="ContainerBorder"
+            Background="#333333"
+            BorderBrush="#555555"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="12"> <!-- Fallback shadow removed to fix MC3024 -->
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.3"/>
+        </Border.Effect>
+        
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Status Bar/Icon placeholder -->
+            <Border x:Name="StatusIndicator"
+                    Width="4" CornerRadius="2"
+                    HorizontalAlignment="Left"
+                    Margin="0,0,10,0"/>
+
+            <TextBlock x:Name="MessageText"
+                       Grid.Column="1"
+                       Text="Notification Message"
+                       Foreground="White"
+                       TextWrapping="Wrap"
+                       VerticalAlignment="Center"
+                       FontSize="13"/>
+
+            <Button Grid.Column="2"
+                    Content="✕"
+                    Foreground="#AAAAAA"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Margin="10,-5,-5,-5"
+                    Padding="5"
+                    Cursor="Hand"
+                    Click="CloseButton_Click">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </Grid>
+    </Border>
+</UserControl>

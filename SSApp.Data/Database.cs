@@ -58,6 +58,17 @@ namespace SSApp.Data
                     LastModified TEXT    NOT NULL
                 );";
             cmd.ExecuteNonQuery();
+
+            // Create ScanResults table
+            cmd.CommandText = @"
+                CREATE TABLE IF NOT EXISTS ScanResults (
+                    Id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Timestamp    TEXT    NOT NULL,
+                    InitiatedBy  TEXT    NOT NULL,
+                    Status       TEXT    NOT NULL,
+                    ResultCode   TEXT    NOT NULL
+                );";
+            cmd.ExecuteNonQuery();
         }
 
         // ---------- PASSWORD HASHING ----------
@@ -346,6 +357,50 @@ namespace SSApp.Data
             cmd.CommandText = "DELETE FROM Users WHERE Id = $id;";
             cmd.Parameters.AddWithValue("$id", id);
             cmd.ExecuteNonQuery();
+        }
+
+        // ---------- SCAN RESULTS ----------
+
+        public static void AddScanResult(ScanRecord record)
+        {
+            using var conn = new SqliteConnection(_connectionString);
+            conn.Open();
+
+            var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                INSERT INTO ScanResults (Timestamp, InitiatedBy, Status, ResultCode)
+                VALUES ($ts, $user, $status, $res);";
+            
+            cmd.Parameters.AddWithValue("$ts", record.Timestamp.ToString("yyyy-MM-dd HH:mm:ss"));
+            cmd.Parameters.AddWithValue("$user", record.InitiatedBy);
+            cmd.Parameters.AddWithValue("$status", record.Status);
+            cmd.Parameters.AddWithValue("$res", record.ResultCode);
+
+            cmd.ExecuteNonQuery();
+        }
+
+        public static List<ScanRecord> GetScanResults()
+        {
+            var list = new List<ScanRecord>();
+            using var conn = new SqliteConnection(_connectionString);
+            conn.Open();
+
+            var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT Id, Timestamp, InitiatedBy, Status, ResultCode FROM ScanResults ORDER BY Id DESC;";
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                list.Add(new ScanRecord
+                {
+                    Id = reader.GetInt32(0),
+                    Timestamp = DateTime.Parse(reader.GetString(1)),
+                    InitiatedBy = reader.GetString(2),
+                    Status = reader.GetString(3),
+                    ResultCode = reader.GetString(4)
+                });
+            }
+            return list;
         }
     }
 }

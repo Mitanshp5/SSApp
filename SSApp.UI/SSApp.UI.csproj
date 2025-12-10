@@ -13,4 +13,24 @@
     <ProjectReference Include="..\SSApp.Services\SSApp.Services.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Copy Native DLL for x64 -->
+    <Content Include="..\x64\$(Configuration)\SSApp.Native.dll" Condition="Exists('..\x64\$(Configuration)\SSApp.Native.dll')">
+      <Link>SSApp.Native.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </Content>
+    <!-- Fallback for Debug if Configuration is not set explicitly in path or mismatch -->
+    <Content Include="..\x64\Debug\SSApp.Native.dll" Condition="'$(Configuration)'=='Debug' And Exists('..\x64\Debug\SSApp.Native.dll') And !Exists('..\x64\$(Configuration)\SSApp.Native.dll')">
+      <Link>SSApp.Native.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </Content>
+  </ItemGroup>
+
+  <Target Name="CheckNativeDll" BeforeTargets="Build">
+    <Warning Text="SSApp.Native.dll not found at ..\x64\$(Configuration)\SSApp.Native.dll. Please ensure the SSApp.Native (C++) project is built." 
+             Condition="!Exists('..\x64\$(Configuration)\SSApp.Native.dll') AND !Exists('..\x64\Debug\SSApp.Native.dll')" />
+  </Target>
+
 </Project>

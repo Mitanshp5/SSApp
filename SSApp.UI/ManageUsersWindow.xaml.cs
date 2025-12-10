@@ -116,5 +116,14 @@ namespace SSApp.UI
             if (e.LeftButton == MouseButtonState.Pressed)
                 DragMove();
         }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                Save_Click(sender, e);
+                e.Handled = true; // Mark the event as handled to prevent further processing
+            }
+        }
     }
 }

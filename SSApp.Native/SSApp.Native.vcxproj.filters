@@ -21,6 +21,9 @@
     <ClInclude Include="PlcControl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="mcProtocol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">

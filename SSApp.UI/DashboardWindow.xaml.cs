@@ -12,10 +12,10 @@ namespace SSApp.UI
 {
     public partial class DashboardWindow : Window
     {
-        [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern void StartScanNative(string ipAddress, int port);
 
-        [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool ConnectPlc(string ipAddress, int port);
 
@@ -42,6 +42,19 @@ namespace SSApp.UI
             
             // Apply role-based visibility
             ApplyRolePermissions();
+
+            // Initialize PLC Connection
+            try
+            {
+                var plcService = new PlcConfigService();
+                var config = plcService.GetPlcConfig();
+                Logger.LogInformation($"Initializing PLC connection to {config.IpAddress}:{config.Port}...");
+                ConnectPlc(config.IpAddress, config.Port);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Failed to initialize PLC connection on startup.", ex);
+            }
 
             // Start polling timer
             _statusTimer = new System.Windows.Threading.DispatcherTimer();

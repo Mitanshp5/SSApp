@@ -10,7 +10,7 @@ namespace SSApp.UI.Controls
 {
     public partial class ToastNotification : UserControl
     {
-        private DispatcherTimer _timer;
+        private DispatcherTimer? _timer;
         private Action _onClosed;
 
         public ToastNotification(string message, NotificationType type, int durationSeconds, Action onClosed)

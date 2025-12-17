@@ -6,6 +6,7 @@ using SSApp.Services.Logging;
 using System.Windows.Input;
 using SSApp.Data.Models;
 using System.Runtime.InteropServices;
+using System.Windows.Interop;
 
 
 namespace SSApp.UI
@@ -14,6 +15,15 @@ namespace SSApp.UI
     {
         [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern void StartScanNative(string ipAddress, int port);
+
+        [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void StartComplexScan();
+
+        [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void StartLiveView(IntPtr hWnd, int deviceIndex);
+
+        [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void StopLiveView();
 
         [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.I1)]
@@ -28,10 +38,21 @@ namespace SSApp.UI
 
         private bool _isPlcConnected = false;
         private System.Windows.Threading.DispatcherTimer _statusTimer;
+        private CameraHost? _cameraHost;
 
         public DashboardWindow()
         {
             InitializeComponent();
+
+            this.Loaded += (s, e) => 
+            {
+                try {
+                     _cameraHost = new CameraHost();
+                     CameraContainer.Child = _cameraHost;
+                     StartLiveView(_cameraHost.Handle, 0);
+                } catch (Exception ex) { Logger.LogError("Camera Init Failed", ex); }
+            };
+            this.Closed += (s, e) => StopLiveView();
 
             // Basic display of user + role
             UserInfoText.Text = $"Logged in as {AuthService.CurrentUser ?? "Unknown"}";
@@ -61,6 +82,23 @@ namespace SSApp.UI
             _statusTimer.Interval = TimeSpan.FromMilliseconds(500);
             _statusTimer.Tick += StatusTimer_Tick;
             _statusTimer.Start();
+        }
+
+        public void RestartLiveView(int cameraIndex)
+        {
+            try 
+            {
+                StopLiveView();
+                if (_cameraHost != null)
+                {
+                    StartLiveView(_cameraHost.Handle, cameraIndex);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Failed to restart camera", ex);
+                NotificationService.ShowError("Failed to restart camera stream.");
+            }
         }
 
         private void StatusTimer_Tick(object? sender, EventArgs e)
@@ -164,14 +202,10 @@ namespace SSApp.UI
                 return;
             }
 
-            // Get Config
-            var plcService = new PlcConfigService();
-            var config = plcService.GetPlcConfig();
-
-            // Call Native DLL to start scan (fire and forget thread)
+            // Call Native DLL to start complex scan
             try
             {
-                StartScanNative(config.IpAddress, config.Port);
+                StartComplexScan();
 
                 // Log to database
                 var scanService = new ScanService();
@@ -311,5 +345,37 @@ namespace SSApp.UI
                 }
             }
         }
+    }
+
+    public class CameraHost : HwndHost
+    {
+        protected override HandleRef BuildWindowCore(HandleRef hwndParent)
+        {
+            var hwnd = CreateWindowEx(0, "static", "",
+                WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN,
+                0, 0, (int)Width, (int)Height,
+                hwndParent.Handle, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+
+            return new HandleRef(this, hwnd);
+        }
+
+        protected override void DestroyWindowCore(HandleRef hwnd)
+        {
+            DestroyWindow(hwnd.Handle);
+        }
+
+        private const int WS_CHILD = 0x40000000;
+        private const int WS_VISIBLE = 0x10000000;
+        private const int WS_CLIPCHILDREN = 0x02000000;
+
+        [DllImport("user32.dll", EntryPoint = "CreateWindowEx", CharSet = CharSet.Unicode)]
+        private static extern IntPtr CreateWindowEx(int dwExStyle, string lpszClassName,
+                                                      string lpszWindowName, int style,
+                                                      int x, int y, int width, int height,
+                                                      IntPtr hwndParent, IntPtr hMenu,
+                                                      IntPtr hInst, IntPtr lpParam);
+
+        [DllImport("user32.dll", EntryPoint = "DestroyWindow", CharSet = CharSet.Unicode)]
+        private static extern bool DestroyWindow(IntPtr hwnd);
     }
 }

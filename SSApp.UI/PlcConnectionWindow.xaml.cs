@@ -8,7 +8,7 @@ namespace SSApp.UI
     {
         private readonly PlcConfigService _plcConfigService;
 
-        public string PlcIpAddress { get; private set; }
+        public string PlcIpAddress { get; private set; } = string.Empty;
         public int PlcPort { get; private set; }
 
         public PlcSettingsWindow()

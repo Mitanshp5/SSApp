@@ -14,14 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Copy Native DLL for x64 -->
-    <Content Include="..\x64\$(Configuration)\SSApp.Native.dll" Condition="Exists('..\x64\$(Configuration)\SSApp.Native.dll')">
-      <Link>SSApp.Native.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>false</Visible>
-    </Content>
-    <!-- Fallback for Debug if Configuration is not set explicitly in path or mismatch -->
-    <Content Include="..\x64\Debug\SSApp.Native.dll" Condition="'$(Configuration)'=='Debug' And Exists('..\x64\Debug\SSApp.Native.dll') And !Exists('..\x64\$(Configuration)\SSApp.Native.dll')">
+
+    <!-- Force copy of Native DLL -->
+    <Content Include="..\x64\Debug\SSApp.Native.dll">
       <Link>SSApp.Native.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>

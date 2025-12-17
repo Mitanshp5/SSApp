@@ -10,6 +10,16 @@ extern "C" {
 
     SSAPPNATIVE_API void StartScanNative(const char* ipAddress, int port);
 
+    SSAPPNATIVE_API void StartComplexScan();
+
+    SSAPPNATIVE_API void StartLiveView(void* hWnd, int deviceIndex);
+
+    SSAPPNATIVE_API void StopLiveView();
+
+    SSAPPNATIVE_API int GetCameraCount();
+
+    SSAPPNATIVE_API bool GetCameraName(int index, char* nameBuffer, int bufferSize);
+
     SSAPPNATIVE_API bool ConnectPlc(const char* ipAddress, int port);
 
     SSAPPNATIVE_API void DisconnectPlc();

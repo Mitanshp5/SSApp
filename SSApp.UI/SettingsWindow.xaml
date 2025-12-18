@@ -2,22 +2,168 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Settings"
-        Height="450" Width="700"
+        Height="500" Width="700"
         WindowStartupLocation="CenterOwner"
-        Background="#111827">
+        Background="#0F172A"
+        WindowStyle="None"
+        ResizeMode="NoResize">
+    
+    <Window.Resources>
+        <!-- Common Styles -->
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#E2E8F0"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+        </Style>
+
+        <Style TargetType="GroupBox">
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="BorderBrush" Value="#1E293B"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="0,0,0,20"/>
+            <Setter Property="Padding" Value="15"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GroupBox">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0" BorderThickness="0,0,0,1" BorderBrush="#1E293B" Margin="0,0,0,10">
+                                <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" Margin="0,0,0,8"/>
+                            </Border>
+                            <Border Grid.Row="1" BorderThickness="0">
+                                <ContentPresenter />
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="TitleBarButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#EF4444"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
     <Grid>
-        <Border Background="#020617"
-                CornerRadius="10"
-                Padding="20"
-                Margin="16">
-            <TextBlock Text="Settings view placeholder.
-You will later add PLC IP, camera config, paths, etc."
-                       Foreground="#9CA3AF"
-                       TextWrapping="Wrap"
-                       VerticalAlignment="Center"
-                       HorizontalAlignment="Center"
-                       TextAlignment="Center"
-                       FontSize="14"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32"/> <!-- Title Bar -->
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Custom Title Bar -->
+        <Border Grid.Row="0" Background="#020617" BorderBrush="#1E293B" BorderThickness="0,0,0,1" MouseDown="TitleBar_MouseDown">
+            <Grid>
+                <TextBlock Text="Application Settings" VerticalAlignment="Center" Margin="15,0,0,0" FontSize="12" Foreground="#94A3B8"/>
+                <Button Style="{StaticResource TitleBarButtonStyle}" Content="✕" Click="Close_Click" HorizontalAlignment="Right"/>
+            </Grid>
         </Border>
+
+        <!-- Main Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20">
+                
+                <!-- Camera Settings -->
+                <GroupBox Header="📷 Camera Configuration">
+                    <StackPanel>
+                        <!-- Exposure Mode -->
+                        <Grid Margin="0,0,0,15">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Exposure Mode" VerticalAlignment="Center" Foreground="#CBD5E1"/>
+                            <ComboBox Grid.Column="1" x:Name="ExposureModeCombo" SelectionChanged="ExposureModeCombo_SelectionChanged">
+                                <ComboBoxItem Content="Manual (Off)" Tag="0"/>
+                                <ComboBoxItem Content="Auto (Once)" Tag="1"/>
+                                <ComboBoxItem Content="Auto (Continuous)" Tag="2"/>
+                            </ComboBox>
+                        </Grid>
+
+                        <!-- Exposure Time -->
+                        <Grid x:Name="ExposureTimeContainer">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            
+                            <Grid Grid.Row="0" Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Exposure Time (µs)" VerticalAlignment="Center" Foreground="#CBD5E1"/>
+                                <Slider Grid.Column="1" x:Name="ExposureSlider" 
+                                        Minimum="100" Maximum="100000" 
+                                        Value="5000" 
+                                        TickFrequency="1000" IsSnapToTickEnabled="True"
+                                        VerticalAlignment="Center" Margin="0,0,15,0"
+                                        ValueChanged="ExposureSlider_ValueChanged"/>
+                                <TextBox Grid.Column="2" x:Name="ExposureTextBox" Text="{Binding ElementName=ExposureSlider, Path=Value, StringFormat=N0}" TextAlignment="Right" PreviewTextInput="NumberValidationTextBox"/>
+                            </Grid>
+                            
+                           
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Actions -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+                    <Button Content="Refresh from Camera" Click="Refresh_Click"
+                            Background="Transparent" Foreground="#3B82F6" BorderThickness="0" Margin="0,0,20,0" Cursor="Hand"/>
+                    
+                    <Button Content="Close" Click="Close_Click"
+                            Background="#334155" Foreground="White" Padding="20,8" BorderThickness="0">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                </StackPanel>
+
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </Window>

@@ -11,13 +11,21 @@
   <ItemGroup>
     <ProjectReference Include="..\SSApp.Data\SSApp.Data.csproj" />
     <ProjectReference Include="..\SSApp.Services\SSApp.Services.csproj" />
+    <ProjectReference Include="..\SSApp.Native\SSApp.Native.vcxproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
 
-    <!-- Force copy of Native DLL -->
-    <Content Include="..\x64\Debug\SSApp.Native.dll">
+    <!-- Force copy of Native DLL based on Configuration -->
+    <Content Include="..\x64\$(Configuration)\SSApp.Native.dll">
       <Link>SSApp.Native.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </Content>
+    <Content Include="..\x64\$(Configuration)\MvCameraControl.Net.dll">
+      <Link>MvCameraControl.Net.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
     </Content>

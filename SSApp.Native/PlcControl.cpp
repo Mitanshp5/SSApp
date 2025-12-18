@@ -36,6 +36,12 @@ std::atomic<bool> g_CaptureRequest(false);
 void* g_LiveViewHwnd = nullptr;
 MV_CC_DEVICE_INFO_LIST g_DeviceList = {0}; // Cache device list
 
+// Capture Synchronization
+std::mutex g_CaptureMutex;
+std::condition_variable g_CaptureCV;
+bool g_CaptureFinished = false;
+std::string g_CaptureFilename;
+
 void LogNative(const std::string& msg) {
     try {
         std::ofstream outfile("native_debug.log", std::ios_base::app);
@@ -50,15 +56,20 @@ void EnsureImagesFolder() {
     _mkdir("images");
 }
 
-void SaveImageFromBuffer(unsigned char* pData, unsigned int dataSize, MV_FRAME_OUT_INFO_EX* pFrameInfo) {
+void SaveImageFromBuffer(unsigned char* pData, unsigned int dataSize, MV_FRAME_OUT_INFO_EX* pFrameInfo, const std::string& customName = "") {
     if (!pData || !pFrameInfo) return;
 
     EnsureImagesFolder();
     
-    // Generate filename based on timestamp
-    auto now = std::chrono::system_clock::now();
-    auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-    std::string filename = "images/img_" + std::to_string(timestamp) + ".bmp";
+    std::string filename;
+    if (!customName.empty()) {
+        filename = "images/" + customName;
+    } else {
+        // Generate filename based on timestamp
+        auto now = std::chrono::system_clock::now();
+        auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+        filename = "images/img_" + std::to_string(timestamp) + ".bmp";
+    }
 
     MV_SAVE_IMAGE_TO_FILE_PARAM_EX stSaveParam;
     memset(&stSaveParam, 0, sizeof(MV_SAVE_IMAGE_TO_FILE_PARAM_EX));
@@ -108,7 +119,18 @@ void CameraLoop() {
 
             // 2. Capture if requested
             if (g_CaptureRequest) {
-                SaveImageFromBuffer(pData, stImageInfo.nFrameLen, &stImageInfo);
+                std::string fname;
+                {
+                     std::lock_guard<std::mutex> lk(g_CaptureMutex);
+                     fname = g_CaptureFilename;
+                }
+                SaveImageFromBuffer(pData, stImageInfo.nFrameLen, &stImageInfo, fname);
+                
+                {
+                    std::lock_guard<std::mutex> lk(g_CaptureMutex);
+                    g_CaptureFinished = true;
+                }
+                g_CaptureCV.notify_all();
                 g_CaptureRequest = false;
             }
         }
@@ -234,7 +256,29 @@ void EnsureThreadStarted() {
 // ---------------------------------------------------------
 // EXPORTED FUNCTIONS
 // ---------------------------------------------------------
-// ... (Connect/Disconnect/StartScanNative omitted)
+bool ConnectPlc(const char* ipAddress, int port) {
+    LogNative("ConnectPlc called: " + std::string(ipAddress) + ":" + std::to_string(port));
+    
+    // Update target
+    {
+        std::lock_guard<std::mutex> lock(g_PlcMutex);
+        g_TargetIP = ipAddress;
+        g_TargetPort = port;
+    }
+    
+    // Signal manager
+    g_ShouldReconnect = true;
+    
+    // Ensure thread is running
+    EnsureThreadStarted();
+    
+    return true; 
+}
+
+void DisconnectPlc() {
+    LogNative("DisconnectPlc called");
+    g_ShouldReconnect = false;
+}
 
 int GetCameraCount() {
     memset(&g_DeviceList, 0, sizeof(MV_CC_DEVICE_INFO_LIST));
@@ -341,43 +385,10 @@ void StopLiveView() {
     LogNative("StopLiveView finished");
 }
 
-void StartComplexScan() {
-    std::thread t([]() {
-        // 1. Turn Lights ON (Y1, Y3, Y4, Y5) at T=0
-        if (g_IsConnected) {
-             std::lock_guard<std::mutex> lock(g_PlcMutex);
-             if (g_Plc && g_Plc->isConnected()) {
-                 try {
-                    g_Plc->write_bit("Y1", { 1 });
-                    g_Plc->write_bit("Y3", { 1 });
-                    g_Plc->write_bit("Y4", { 1 });
-                    g_Plc->write_bit("Y5", { 1 });
-                 } catch (...) {}
-             }
-        }
 
-        // 2. Wait 0.05s
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
-
-        // 3. Capture Image
-        if (g_CamLiveViewRunning) {
-            g_CaptureRequest = true;
-        } else {
-            // Temporary capture logic if live view is not running
-            // (Omitting for brevity, assuming Live View is usually on in this workflow, 
-            // or user should enable it. If needed, I can duplicate the connect/grab/save/disconnect logic here)
-            LogNative("Warning: Live View not running, capture skipped (TODO: Implement standalone capture)");
-        }
-    });
-    t.detach();
-}
 
 void StartScanNative(const char* /*ipAddress*/, int /*port*/) {
-    // Deprecated or mapped to complex scan?
-    // Keeping original behavior for compatibility or mapping to new?
-    // User asked "when i press start scan...". I'll map the UI button to StartComplexScan.
-    // Leaving this as the legacy toggle function.
-     std::thread t([]() {
+    std::thread t([]() {
         if (g_IsConnected) {
              {
                  std::lock_guard<std::mutex> lock(g_PlcMutex);
@@ -407,5 +418,98 @@ int GetLastPlcValue() {
 
 bool GetIsConnected() {
     return g_IsConnected;
+}
+
+bool GetIsCameraConnected() {
+    return g_CamHandle != nullptr;
+}
+
+// ---------------------------------------------------------
+// CAMERA EXPOSURE SETTINGS
+// ---------------------------------------------------------
+
+int SetCameraExposureAuto(int mode) {
+    std::lock_guard<std::mutex> lock(g_CamMutex);
+    if (!g_CamHandle) return -1; // Not initialized
+
+    // "ExposureAuto" : 0=Off, 1=Once, 2=Continuous
+    // Note: Enum values might differ by camera, but standard GenICam usually maps:
+    // Off = 0, Once = 1, Continuous = 2.
+    // MVS SDK uses integer values for Enums.
+    
+    int nRet = MV_CC_SetEnumValue(g_CamHandle, "ExposureAuto", (unsigned int)mode);
+    if (nRet != MV_OK) {
+        LogNative("SetExposureAuto failed: " + std::to_string(nRet));
+    }
+    return nRet;
+}
+
+int SetCameraExposureTime(float exposureTimeUs) {
+    std::lock_guard<std::mutex> lock(g_CamMutex);
+    if (!g_CamHandle) return -1;
+
+    // "ExposureTime"
+    int nRet = MV_CC_SetFloatValue(g_CamHandle, "ExposureTime", exposureTimeUs);
+    if (nRet != MV_OK) {
+        LogNative("SetExposureTime failed: " + std::to_string(nRet));
+    }
+    return nRet;
+}
+
+int GetCameraExposureAuto() {
+    std::lock_guard<std::mutex> lock(g_CamMutex);
+    if (!g_CamHandle) return -1;
+
+    MVCC_ENUMVALUE stEnumValue = {0};
+    int nRet = MV_CC_GetEnumValue(g_CamHandle, "ExposureAuto", &stEnumValue);
+    if (nRet != MV_OK) {
+        LogNative("GetExposureAuto failed: " + std::to_string(nRet));
+        return -1;
+    }
+    return (int)stEnumValue.nCurValue;
+}
+
+float GetCameraExposureTime() {
+    std::lock_guard<std::mutex> lock(g_CamMutex);
+    if (!g_CamHandle) return -1.0f;
+
+    MVCC_FLOATVALUE stFloatValue = {0};
+    int nRet = MV_CC_GetFloatValue(g_CamHandle, "ExposureTime", &stFloatValue);
+    if (nRet != MV_OK) {
+        LogNative("GetExposureTime failed: " + std::to_string(nRet));
+        return -1.0f;
+    }
+    return stFloatValue.fCurValue;
+}
+
+void SetPlcBit(const char* device, int value) {
+    if (g_IsConnected) {
+        std::lock_guard<std::mutex> lock(g_PlcMutex);
+        if (g_Plc && g_Plc->isConnected()) {
+            try {
+                g_Plc->write_bit(device, { value });
+            } catch (...) {}
+        }
+    }
+}
+
+bool CaptureImageCustom(const char* filename) {
+    if (!g_CamLiveViewRunning) return false;
+
+    {
+        std::lock_guard<std::mutex> lock(g_CaptureMutex);
+        g_CaptureFilename = filename;
+        g_CaptureFinished = false;
+        g_CaptureRequest = true;
+    }
+
+    // Wait for completion (timeout 5s)
+    {
+        std::unique_lock<std::mutex> lock(g_CaptureMutex);
+        if (g_CaptureCV.wait_for(lock, std::chrono::seconds(5), []{ return g_CaptureFinished; })) {
+             return true;
+        }
+    }
+    return false; // Timeout
 }
 

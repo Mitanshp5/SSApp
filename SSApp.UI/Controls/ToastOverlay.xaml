@@ -6,13 +6,23 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-        <!-- StackPanel to hold toasts. 
-             VerticalAlignment="Bottom" HorizontalAlignment="Right" 
-             means it sits in the bottom right corner. -->
-        <StackPanel x:Name="ToastStack"
-                    VerticalAlignment="Bottom"
-                    HorizontalAlignment="Right"
-                    Margin="20"
-                    Width="320"/>
+        <!-- Popup is required to render over Native Windows (HwndHost) - Airspace Issue -->
+        <Popup x:Name="OverlayPopup"
+               IsOpen="True" 
+               StaysOpen="True" 
+               AllowsTransparency="True"
+               Placement="Absolute">
+            
+            <Grid Background="Transparent">
+                <!-- StackPanel to hold toasts. 
+                     VerticalAlignment="Bottom" HorizontalAlignment="Right" 
+                     means it sits in the bottom right corner over the Live View. -->
+                <StackPanel x:Name="ToastStack"
+                            VerticalAlignment="Bottom"
+                            HorizontalAlignment="Right"
+                            Margin="20,20,20,80"
+                            Width="300"/>
+            </Grid>
+        </Popup>
     </Grid>
 </UserControl>

@@ -16,8 +16,7 @@ namespace SSApp.UI
         [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern void StartScanNative(string ipAddress, int port);
 
-        [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void StartComplexScan();
+
 
         [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern void StartLiveView(IntPtr hWnd, int deviceIndex);
@@ -36,9 +35,21 @@ namespace SSApp.UI
         [return: MarshalAs(UnmanagedType.I1)]
         public static extern bool GetIsConnected();
 
+        [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool GetIsCameraConnected();
+
+        [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern void SetPlcBit(string device, int value);
+
+        [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        public static extern bool CaptureImageCustom(string filename);
+
         private bool _isPlcConnected = false;
         private System.Windows.Threading.DispatcherTimer _statusTimer;
         private CameraHost? _cameraHost;
+        private bool _isScanRunning = false;
 
         public DashboardWindow()
         {
@@ -106,26 +117,45 @@ namespace SSApp.UI
             try
             {
                 // Check connection status
-                bool connected = GetIsConnected();
-                SetPlcStatus(connected);
+                bool plcConnected = GetIsConnected();
+                bool cameraConnected = false;
+                try { cameraConnected = GetIsCameraConnected(); } catch { }
 
-                if (connected)
+                // Detect transition from Disconnected -> Connected
+                if (plcConnected && !_isPlcConnected)
                 {
-                    // Update machine status from D0
-                    int status = GetLastPlcValue();
-                    MachineStatusText.Text = GetStatusString(status);
-                    
-                    // Optional: Color coding based on status
-                    if (status == 3) // Error
-                        MachineStatusText.Foreground = new SolidColorBrush(Color.FromRgb(239, 68, 68)); // Red
-                    else if (status == 1) // Running
-                        MachineStatusText.Foreground = new SolidColorBrush(Color.FromRgb(34, 197, 94)); // Green
+                    NotificationService.ShowSuccess("PLC Connected");
+                }
+
+                SetPlcStatus(plcConnected);
+
+                if (plcConnected)
+                {
+                    if (!cameraConnected)
+                    {
+                        MachineStatusText.Text = "Camera Disconnected";
+                        MachineStatusText.Foreground = new SolidColorBrush(Color.FromRgb(245, 158, 11)); // Orange/Amber
+                    }
                     else
-                        MachineStatusText.Foreground = new SolidColorBrush(Color.FromRgb(226, 232, 240)); // Default White
+                    {
+                        // Update machine status from D0
+                        int status = GetLastPlcValue();
+                        
+                        if (status == 1) // Running
+                        {
+                            MachineStatusText.Text = "Running";
+                            MachineStatusText.Foreground = new SolidColorBrush(Color.FromRgb(34, 197, 94)); // Green
+                        }
+                        else
+                        {
+                            MachineStatusText.Text = "Connected";
+                            MachineStatusText.Foreground = new SolidColorBrush(Color.FromRgb(226, 232, 240)); // Default White
+                        }
+                    }
                 }
                 else
                 {
-                    MachineStatusText.Text = "Offline";
+                    MachineStatusText.Text = "Disconnected";
                     MachineStatusText.Foreground = new SolidColorBrush(Color.FromRgb(148, 163, 184)); // Gray
                 }
             }
@@ -185,27 +215,79 @@ namespace SSApp.UI
                 : new SolidColorBrush(Color.FromRgb(248, 113, 113)); // red
         }
 
-        // ---- Navigation handlers ----
-
-        private void MachineStatusButton_Click(object sender, RoutedEventArgs e)
+        private async void StartScanButton_Click(object sender, RoutedEventArgs e)
         {
-            var win = new MachineStatusWindow();
-            win.Owner = this;
-            win.ShowDialog();
-        }
+            if (_isScanRunning) return;
 
-        private void StartScanButton_Click(object sender, RoutedEventArgs e)
-        {
             if (!_isPlcConnected)
             {
                 NotificationService.ShowWarning("PLC is not connected. Please check settings.");
                 return;
             }
 
-            // Call Native DLL to start complex scan
+            bool cameraConnected = false;
+            try { cameraConnected = GetIsCameraConnected(); } catch { }
+
+            if (!cameraConnected)
+            {
+                NotificationService.ShowWarning("Camera is not connected. Please check connection.");
+                return;
+            }
+
+            _isScanRunning = true;
+            StartScanButton.IsEnabled = false;
+            StartScanTile.IsEnabled = false;
+            MachineStatusText.Text = "Scanning...";
+            MachineStatusText.Foreground = new SolidColorBrush(Color.FromRgb(245, 158, 11)); // Amber
+
             try
             {
-                StartComplexScan();
+                await Task.Run(async () =>
+                {
+                    // Loop 1 to 15 (0001 to 1111)
+                    // Bit 0 (1) = Right (Y1)
+                    // Bit 1 (2) = Top (Y3)
+                    // Bit 2 (4) = Left (Y4)
+                    // Bit 3 (8) = Bottom (Y5)
+
+                    for (int i = 1; i <= 15; i++)
+                    {
+                        bool r = (i & 1) != 0;
+                        bool t = (i & 2) != 0;
+                        bool l = (i & 4) != 0;
+                        bool b = (i & 8) != 0;
+
+                        // Set Lights
+                        SetPlcBit("Y1", r ? 1 : 0);
+                        SetPlcBit("Y3", t ? 1 : 0);
+                        SetPlcBit("Y4", l ? 1 : 0);
+                        SetPlcBit("Y5", b ? 1 : 0);
+
+                        // Wait for light adjustment (max 200ms)
+                        await Task.Delay(150);
+
+                        // Generate Filename
+                        string filename = "";
+                        if (t) filename += "T";
+                        if (r) filename += "R";
+                        if (b) filename += "B";
+                        if (l) filename += "L";
+                        filename += ".jpg";
+
+                        // Capture
+                        bool captured = CaptureImageCustom(filename);
+                        if (!captured)
+                        {
+                            Logger.LogError($"Failed to capture {filename}");
+                        }
+                    }
+
+                    // Turn off all lights
+                    SetPlcBit("Y1", 0);
+                    SetPlcBit("Y3", 0);
+                    SetPlcBit("Y4", 0);
+                    SetPlcBit("Y5", 0);
+                });
 
                 // Log to database
                 var scanService = new ScanService();
@@ -213,17 +295,32 @@ namespace SSApp.UI
                 {
                     Timestamp = DateTime.Now,
                     InitiatedBy = AuthService.CurrentUser ?? "Unknown",
-                    Status = "Initiated",
-                    ResultCode = "PENDING"
+                    Status = "Completed",
+                    ResultCode = "SUCCESS"
                 });
 
-                NotificationService.ShowSuccess("Scan started successfully.");
-                Logger.LogInformation($"Scan started by {AuthService.CurrentUser}");
+                NotificationService.ShowSuccess("Multi-light scan completed successfully.");
+                Logger.LogInformation($"Multi-light scan completed by {AuthService.CurrentUser}");
             }
             catch (Exception ex)
             {
-                 NotificationService.ShowError("Failed to start scan (Native Module Error).");
-                 Logger.LogError("Error calling native StartScan", ex);
+                 NotificationService.ShowError("Error during scan process.");
+                 Logger.LogError("Error in multi-light scan", ex);
+                 
+                 // Attempt to turn off lights on error
+                 try {
+                    SetPlcBit("Y1", 0);
+                    SetPlcBit("Y3", 0);
+                    SetPlcBit("Y4", 0);
+                    SetPlcBit("Y5", 0);
+                 } catch { }
+            }
+            finally
+            {
+                _isScanRunning = false;
+                StartScanButton.IsEnabled = true;
+                StartScanTile.IsEnabled = true;
+                MachineStatusText.Text = "Connected"; // Revert status (timer will update it anyway)
             }
         }
 
@@ -254,6 +351,14 @@ namespace SSApp.UI
             win.Owner = this;
             win.ShowDialog();
         }
+
+        private void MachineStatusButton_Click(object sender, RoutedEventArgs e)
+        {
+            var win = new MachineStatusWindow();
+            win.Owner = this;
+            win.ShowDialog();
+        }
+
         // Drag window
         private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -318,24 +423,13 @@ namespace SSApp.UI
             if (plcSettingsWindow.ShowDialog() == true)
             {
                 // Settings are saved in the window via service
-                NotificationService.ShowInfo($"PLC settings saved: {plcSettingsWindow.PlcIpAddress}:{plcSettingsWindow.PlcPort}");
                 Logger.LogInformation($"PLC settings updated to {plcSettingsWindow.PlcIpAddress}:{plcSettingsWindow.PlcPort}");
 
                 // Reconnect to PLC with new settings
                 try
                 {
-                    bool connected = ConnectPlc(plcSettingsWindow.PlcIpAddress, plcSettingsWindow.PlcPort);
-                    SetPlcStatus(connected);
-                    
-                    if (connected)
-                    {
-                        NotificationService.ShowSuccess("Successfully connected to PLC.");
-                    }
-                    else
-                    {
-                        NotificationService.ShowError("Failed to connect to PLC. Check settings and network.");
-                        Logger.LogWarning("Failed to connect to PLC after settings update.");
-                    }
+                    NotificationService.ShowInfo("Attempting to connect to PLC...");
+                    ConnectPlc(plcSettingsWindow.PlcIpAddress, plcSettingsWindow.PlcPort);
                 }
                 catch (Exception ex)
                 {

@@ -113,10 +113,10 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Exposure Mode" VerticalAlignment="Center" Foreground="#CBD5E1"/>
-                            <ComboBox Grid.Column="1" x:Name="ExposureModeCombo" SelectionChanged="ExposureModeCombo_SelectionChanged">
-                                <ComboBoxItem Content="Manual (Off)" Tag="0"/>
-                                <ComboBoxItem Content="Auto (Once)" Tag="1"/>
-                                <ComboBoxItem Content="Auto (Continuous)" Tag="2"/>
+                            <ComboBox Grid.Column="1" x:Name="ExposureModeCombo" SelectionChanged="ExposureModeCombo_SelectionChanged" Foreground="Black">
+                                <ComboBoxItem Content="Manual (Off)" Tag="0" Foreground="Black"/>
+                                <ComboBoxItem Content="Auto (Once)" Tag="1" Foreground="Black"/>
+                                <ComboBoxItem Content="Auto (Continuous)" Tag="2" Foreground="Black"/>
                             </ComboBox>
                         </Grid>
 
@@ -144,12 +144,129 @@
                             </Grid>
                             
                            
+                            
+                           
                         </Grid>
+                           
                     </StackPanel>
+                           
                 </GroupBox>
+                           
 
-                <!-- Actions -->
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+                           
+                                <!-- Lighting & Calibration -->
+                           
+
+                           
+                                <GroupBox Header="💡 Lighting &amp; Calibration">
+                           
+
+                           
+                                    <StackPanel>
+                           
+
+                           
+                                        <CheckBox x:Name="ChkAllLights" 
+                           
+
+                           
+                                                  Content="Camera Calibration Mode (All Lights On)" 
+                           
+
+                           
+                                                  Checked="CalibrationMode_Checked"
+                           
+
+                           
+                                                  Unchecked="CalibrationMode_Unchecked"
+                           
+
+                           
+                                                  Foreground="#CBD5E1">
+                           
+
+                           
+                                            <CheckBox.LayoutTransform>
+                           
+
+                           
+                                                <ScaleTransform ScaleX="1.1" ScaleY="1.1"/>
+                           
+
+                           
+                                            </CheckBox.LayoutTransform>
+                           
+
+                           
+                                        </CheckBox>
+                           
+
+                           
+                                        <TextBlock Text="Activates Y1, Y3, Y4, Y5 for calibration." 
+                           
+
+                           
+                                                   FontSize="12" Foreground="#64748B" Margin="24,6,0,10"/>
+                           
+
+                           
+                
+                           
+
+                           
+                                        <!-- Individual Lights -->
+                           
+
+                           
+                                        <WrapPanel Margin="24,0,0,0">
+                           
+
+                           
+                                            <CheckBox x:Name="ChkY1" Content="Light 1 (Y1)" Margin="0,0,15,10" Foreground="#E2E8F0" 
+                           
+
+                           
+                                                      Checked="Light_Checked" Unchecked="Light_Unchecked" Tag="Y1"/>
+                           
+
+                           
+                                            <CheckBox x:Name="ChkY3" Content="Light 2 (Y3)" Margin="0,0,15,10" Foreground="#E2E8F0" 
+                           
+
+                           
+                                                      Checked="Light_Checked" Unchecked="Light_Unchecked" Tag="Y3"/>
+                           
+
+                           
+                                            <CheckBox x:Name="ChkY4" Content="Light 3 (Y4)" Margin="0,0,15,10" Foreground="#E2E8F0" 
+                           
+
+                           
+                                                      Checked="Light_Checked" Unchecked="Light_Unchecked" Tag="Y4"/>
+                           
+
+                           
+                                            <CheckBox x:Name="ChkY5" Content="Light 4 (Y5)" Margin="0,0,15,10" Foreground="#E2E8F0" 
+                           
+
+                           
+                                                      Checked="Light_Checked" Unchecked="Light_Unchecked" Tag="Y5"/>
+                           
+
+                           
+                                        </WrapPanel>
+                           
+
+                           
+                                    </StackPanel>
+                           
+
+                           
+                                </GroupBox>
+                           
+
+                           
+                <!-- Actions -->                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
                     <Button Content="Refresh from Camera" Click="Refresh_Click"
                             Background="Transparent" Foreground="#3B82F6" BorderThickness="0" Margin="0,0,20,0" Cursor="Hand"/>
                     

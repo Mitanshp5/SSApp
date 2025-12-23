@@ -371,19 +371,15 @@
                 <Border Grid.Row="1"
                         Background="#0F172A"
                         CornerRadius="12"
-                        Padding="4"
                         BorderBrush="#1E40AF"
                         BorderThickness="1">
                     <Border.Effect>
                         <DropShadowEffect Color="#2563EB" BlurRadius="20" ShadowDepth="0" Opacity="0.15"/>
                     </Border.Effect>
-                    <Grid>
-                        <!-- Live View Container -->
-                        <Border x:Name="CameraContainer" 
-                                Background="Black"
-                                CornerRadius="8"
-                                ClipToBounds="True"/>
-                    </Grid>
+                    <!-- Live View Container -->
+                    <Border x:Name="CameraContainer" 
+                            Background="Black"
+                            CornerRadius="12"/>
                 </Border>
             </Grid>
         </Grid>

@@ -244,13 +244,10 @@ namespace SSApp.UI
             {
                 await Task.Run(async () =>
                 {
-                    // Loop 1 to 15 (0001 to 1111)
-                    // Bit 0 (1) = Right (Y1)
-                    // Bit 1 (2) = Top (Y3)
-                    // Bit 2 (4) = Left (Y4)
-                    // Bit 3 (8) = Bottom (Y5)
+                    // Sequence: Top(2), Right(1), Bottom(8), Left(4), All(15)
+                    int[] scanSequence = { 2, 1, 8, 4 };
 
-                    for (int i = 1; i <= 15; i++)
+                    foreach (int i in scanSequence)
                     {
                         bool r = (i & 1) != 0;
                         bool t = (i & 2) != 0;
@@ -272,7 +269,9 @@ namespace SSApp.UI
                         if (r) filename += "R";
                         if (b) filename += "B";
                         if (l) filename += "L";
-                        filename += ".jpg";
+                        
+                        // Append timestamp
+                        filename += $"_{DateTime.Now:yyyyMMdd_HHmmss}.jpg";
 
                         // Capture
                         bool captured = CaptureImageCustom(filename);
@@ -458,6 +457,22 @@ namespace SSApp.UI
             DestroyWindow(hwnd.Handle);
         }
 
+        protected override IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            const int WM_SIZE = 0x0005;
+            if (msg == WM_SIZE)
+            {
+                int width = (int)(lParam.ToInt64() & 0xFFFF);
+                int height = (int)((lParam.ToInt64() >> 16) & 0xFFFF);
+                
+                // Create rounded region matching CornerRadius="12" (approx 24px diameter)
+                IntPtr hRgn = CreateRoundRectRgn(0, 0, width, height, 24, 24);
+                SetWindowRgn(hwnd, hRgn, true);
+            }
+
+            return base.WndProc(hwnd, msg, wParam, lParam, ref handled);
+        }
+
         private const int WS_CHILD = 0x40000000;
         private const int WS_VISIBLE = 0x10000000;
         private const int WS_CLIPCHILDREN = 0x02000000;
@@ -471,5 +486,11 @@ namespace SSApp.UI
 
         [DllImport("user32.dll", EntryPoint = "DestroyWindow", CharSet = CharSet.Unicode)]
         private static extern bool DestroyWindow(IntPtr hwnd);
+
+        [DllImport("gdi32.dll")]
+        private static extern IntPtr CreateRoundRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect, int nWidthEllipse, int nHeightEllipse);
+
+        [DllImport("user32.dll")]
+        private static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);
     }
 }

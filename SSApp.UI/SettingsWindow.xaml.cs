@@ -24,6 +24,9 @@ namespace SSApp.UI
         [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern float GetCameraExposureTime();
 
+        [DllImport("SSApp.Native.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        private static extern void SetPlcBit(string device, int value);
+
         private bool _isInitialized = false;
 
         public SettingsWindow()
@@ -42,6 +45,7 @@ namespace SSApp.UI
         {
             try
             {
+                SetCameraExposureAuto(2);
                 // Get Auto Mode
                 // 0=Off, 1=Once, 2=Continuous
                 int autoMode = GetCameraExposureAuto();
@@ -146,6 +150,103 @@ namespace SSApp.UI
             if (e.LeftButton == MouseButtonState.Pressed)
             {
                 DragMove();
+            }
+        }
+
+        private bool _suppressLightEvents = false;
+
+        private void CalibrationMode_Checked(object sender, RoutedEventArgs e)
+        {
+            if (_suppressLightEvents) return;
+
+            _suppressLightEvents = true;
+            ChkY1.IsChecked = true;
+            ChkY3.IsChecked = true;
+            ChkY4.IsChecked = true;
+            ChkY5.IsChecked = true;
+            _suppressLightEvents = false;
+
+            SetLights(1);
+        }
+
+        private void CalibrationMode_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (_suppressLightEvents) return;
+
+            _suppressLightEvents = true;
+            ChkY1.IsChecked = false;
+            ChkY3.IsChecked = false;
+            ChkY4.IsChecked = false;
+            ChkY5.IsChecked = false;
+            _suppressLightEvents = false;
+
+            SetLights(0);
+        }
+
+        private void Light_Checked(object sender, RoutedEventArgs e)
+        {
+            HandleLightToggle(sender, 1);
+        }
+
+        private void Light_Unchecked(object sender, RoutedEventArgs e)
+        {
+            HandleLightToggle(sender, 0);
+        }
+
+        private void HandleLightToggle(object sender, int value)
+        {
+            if (_suppressLightEvents) return;
+
+            if (sender is CheckBox cb && cb.Tag is string device)
+            {
+                try
+                {
+                    SetPlcBit(device, value);
+                    
+                    // Sync "All" checkbox state
+                    _suppressLightEvents = true;
+                    if (IsAllChecked())
+                    {
+                        ChkAllLights.IsChecked = true;
+                    }
+                    else if (value == 0) // If any unchecked, uncheck All
+                    {
+                        ChkAllLights.IsChecked = false;
+                    }
+                    _suppressLightEvents = false;
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError($"Failed to set {device}", ex);
+                }
+            }
+        }
+
+        private bool IsAllChecked()
+        {
+            return (ChkY1.IsChecked == true) && 
+                   (ChkY3.IsChecked == true) && 
+                   (ChkY4.IsChecked == true) && 
+                   (ChkY5.IsChecked == true);
+        }
+
+        private void SetLights(int value)
+        {
+            try
+            {
+                SetPlcBit("Y1", value);
+                SetPlcBit("Y3", value);
+                SetPlcBit("Y4", value);
+                SetPlcBit("Y5", value);
+                
+                if (value == 1)
+                    NotificationService.ShowInfo("Calibration lights ON");
+                else
+                    NotificationService.ShowInfo("Calibration lights OFF");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Failed to toggle lights", ex);
             }
         }
     }

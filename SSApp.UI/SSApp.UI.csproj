@@ -24,11 +24,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
     </Content>
-    <Content Include="..\x64\$(Configuration)\MvCameraControl.Net.dll">
-      <Link>MvCameraControl.Net.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>false</Visible>
-    </Content>
   </ItemGroup>
 
   <Target Name="CheckNativeDll" BeforeTargets="Build">
